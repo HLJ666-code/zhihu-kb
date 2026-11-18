@@ -1,0 +1,4 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #fafaf8; color: #2c2c2c; }
+#app { height: 100vh; }
+h2 { font-weight: 600; margin-bottom: 16px; }
