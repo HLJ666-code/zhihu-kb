@@ -1,0 +1,10 @@
+target/
+node_modules/
+*.log
+.idea/
+.vscode/
+*.iml
+zhihu_cookie.txt
+__pycache__/
+*.pyc
+pgdata/
