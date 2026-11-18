@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.ArticleMapper">
+    <select id="search" resultType="scu.cs.zhihu.domain.ArticleHit">
+        SELECT a.article_id, a.title, a.url_token, au.author_id, au.name AS author_name,
+               s.excerpt, s.voteup_count, s.comment_count, s.version_no, s.captured_at,
+               (SELECT string_agg(t.tag_name, ' · ' ORDER BY t.tag_id) FROM article_tag at2 JOIN tag t ON t.tag_id = at2.tag_id WHERE at2.article_id = a.article_id) AS tags,
+               round((ts_rank(a.search_vec, plainto_tsquery('simple', #{kw})) + CASE WHEN #{kw} != '' AND a.title ILIKE '%' || #{kw} || '%' THEN 1.0 - (strpos(a.title, #{kw}) - 1)::numeric / greatest(length(a.title), 1) ELSE 0 END)::numeric, 4) AS score
+          FROM zh_article a
+          JOIN zh_author au ON au.author_id = a.author_id
+          JOIN LATERAL (SELECT * FROM article_snapshot s2 WHERE s2.article_id = a.article_id ORDER BY version_no DESC LIMIT 1) s ON true
+        <where>
+            <if test="kw != null and kw != ''">AND (a.search_vec @@ plainto_tsquery('simple', #{kw}) OR a.title ILIKE '%' || #{kw} || '%')</if>
+            <if test="tagId != null">AND a.article_id IN (WITH RECURSIVE sub AS (SELECT tag_id FROM tag WHERE tag_id = #{tagId} UNION ALL SELECT t.tag_id FROM tag t JOIN sub ON t.parent_id = sub.tag_id) SELECT at3.article_id FROM article_tag at3 WHERE at3.tag_id IN (SELECT tag_id FROM sub))</if>
+        </where>
+        ORDER BY score DESC NULLS LAST, s.voteup_count DESC LIMIT 50
+    </select>
+    <select id="detail" resultType="scu.cs.zhihu.domain.ArticleDetail">
+        SELECT a.article_id, a.title, a.url_token, au.author_id, au.name AS author_name, au.headline AS author_headline,
+               a.publish_time, a.first_seen_at, a.last_seen_at, a.latest_version_no,
+               s.voteup_count, s.comment_count, s.captured_at, s.excerpt, s.content, s.content_html,
+               length(coalesce(s.content, '')) AS content_len,
+               (SELECT string_agg(t.tag_name, ' · ' ORDER BY t.tag_id) FROM article_tag at2 JOIN tag t ON t.tag_id = at2.tag_id WHERE at2.article_id = a.article_id) AS tags
+          FROM zh_article a
+          JOIN zh_author au ON au.author_id = a.author_id
+          JOIN LATERAL (SELECT * FROM article_snapshot s2 WHERE s2.article_id = a.article_id ORDER BY version_no DESC LIMIT 1) s ON true
+         WHERE a.article_id = #{id}
+    </select>
+    <select id="versions" resultType="scu.cs.zhihu.domain.VersionRow">
+        SELECT version_no, captured_at, voteup_count, comment_count,
+               voteup_count - lag(voteup_count) OVER (ORDER BY version_no) AS delta,
+               length(coalesce(content, '')) AS content_len, excerpt
+          FROM article_snapshot WHERE article_id = #{id} ORDER BY version_no
+    </select>
+    <select id="snapshot" resultType="scu.cs.zhihu.domain.SnapshotRow">
+        SELECT version_no, captured_at, voteup_count, comment_count, content, content_html
+          FROM article_snapshot WHERE article_id = #{id} AND version_no = #{v}
+    </select>
+</mapper>

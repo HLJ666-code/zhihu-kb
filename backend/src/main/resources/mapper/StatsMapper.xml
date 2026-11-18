@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.StatsMapper">
+    <select id="overview" resultType="scu.cs.zhihu.domain.Overview">
+        SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE') AS table_cnt,
+               (SELECT count(*) FROM information_schema.views WHERE table_schema = 'public') AS view_cnt,
+               (SELECT count(*) FROM information_schema.triggers WHERE trigger_schema = 'public') AS trigger_cnt,
+               (SELECT count(*) FROM pg_indexes WHERE schemaname = 'public') AS index_cnt,
+               (SELECT count(*) FROM zh_article) AS article_cnt,
+               (SELECT count(*) FROM article_snapshot) AS snapshot_cnt,
+               (SELECT count(*) FROM zh_author) AS author_cnt,
+               (SELECT count(*) FROM article_note) AS note_cnt,
+               (SELECT count(*) FROM search_task) AS search_cnt,
+               (SELECT count(*) FROM search_task WHERE result_cnt = 0) AS gap_cnt
+    </select>
+    <select id="batches" resultType="scu.cs.zhihu.domain.BatchRow">
+        SELECT b.batch_id, b.source_note, b.started_at, b.finished_at, b.status,
+               b.fetched_cnt, b.inserted_cnt, b.updated_cnt,
+               (SELECT count(*) FROM article_snapshot s WHERE s.batch_id = b.batch_id) AS snapshot_cnt
+          FROM crawl_batch b ORDER BY b.batch_id DESC
+    </select>
+</mapper>

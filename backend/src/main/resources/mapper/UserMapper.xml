@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.UserMapper">
+    <select id="notes" resultType="scu.cs.zhihu.domain.NoteRow">
+        SELECT n.user_id, n.article_id, a.title, au.name AS author_name, n.created_at, n.note_text
+          FROM article_note n
+          JOIN zh_article a ON a.article_id = n.article_id
+          JOIN zh_author au ON au.author_id = a.author_id
+         WHERE n.user_id = #{userId} ORDER BY n.created_at DESC
+    </select>
+    <insert id="addNote">
+        INSERT INTO article_note (user_id, article_id, note_text) VALUES (#{userId}, #{articleId}, #{noteText})
+    </insert>
+    <select id="unread" resultType="scu.cs.zhihu.domain.UnreadRow">
+        SELECT article_id, title, author_name FROM v_my_unread
+    </select>
+    <select id="searchHistory" resultType="scu.cs.zhihu.domain.GapRow">
+        SELECT task_id, keyword, executed_at, duration_ms, result_cnt
+          FROM search_task WHERE user_id = #{userId}
+        <if test="onlyGap">AND result_cnt = 0</if>
+         ORDER BY executed_at DESC LIMIT 50
+    </select>
+    <insert id="addFollow">
+        INSERT INTO user_follow (user_id, author_id, follow_at) VALUES (#{userId}, #{authorId}, now())
+    </insert>
+    <update id="closeFollow">
+        UPDATE user_follow SET unfollow_at = now() WHERE user_id = #{userId} AND author_id = #{authorId} AND unfollow_at IS NULL
+    </update>
+    <select id="countActiveFollow" resultType="int">
+        SELECT count(*) FROM user_follow WHERE user_id = #{userId} AND author_id = #{authorId} AND unfollow_at IS NULL
+    </select>
+</mapper>

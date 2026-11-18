@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.ImportMapper">
+    <select id="createBatch" resultType="long">
+        INSERT INTO crawl_batch (source_note) VALUES (#{note}) RETURNING batch_id
+    </select>
+    <update id="closeBatch">
+        UPDATE crawl_batch SET status = 'SUCCESS', finished_at = now() WHERE batch_id = #{batchId} AND status = 'RUNNING'
+    </update>
+    <insert id="upsertAuthor" parameterType="scu.cs.zhihu.domain.ImportItem">
+        INSERT INTO zh_author (author_id, name, headline) VALUES (#{authorId}, #{authorName}, #{authorHeadline}) ON CONFLICT (author_id) DO NOTHING
+    </insert>
+    <select id="findArticle" resultType="java.lang.Long">
+        SELECT article_id FROM zh_article WHERE url_token = #{token}
+    </select>
+    <select id="insertArticle" resultType="long" parameterType="scu.cs.zhihu.domain.ImportItem">
+        INSERT INTO zh_article (url_token, author_id, title, content_type, publish_time)
+        VALUES (#{urlToken}, #{authorId}, #{title}, 'article', coalesce(cast(#{capturedAt} AS timestamptz), now())) RETURNING article_id
+    </select>
+    <select id="maxVersion" resultType="int">
+        SELECT coalesce(max(version_no), 0) FROM article_snapshot WHERE article_id = #{articleId}
+    </select>
+    <select id="hasSnapshotInBatch" resultType="int">
+        SELECT count(*) FROM article_snapshot WHERE article_id = #{articleId} AND batch_id = #{batchId}
+    </select>
+    <insert id="insertSnapshot" parameterType="scu.cs.zhihu.domain.ImportItem">
+        INSERT INTO article_snapshot (article_id, version_no, captured_at, batch_id, title, excerpt, content, content_html, voteup_count, comment_count)
+        VALUES (#{articleId}, #{versionNo}, coalesce(cast(#{item.capturedAt} AS timestamptz), now()),
+                #{batchId}, #{item.title}, #{item.excerpt}, #{item.content}, #{item.contentHtml},
+                coalesce(#{item.voteupCount}, 0), coalesce(#{item.commentCount}, 0))
+        ON CONFLICT DO NOTHING
+    </insert>
+</mapper>

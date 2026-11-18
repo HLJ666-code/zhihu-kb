@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.AuthorMapper">
+    <select id="rank" resultType="scu.cs.zhihu.domain.RankRow">
+        SELECT author_id, name, article_cnt, total_voteup, avg_voteup, voteup_rank FROM v_author_rank ORDER BY voteup_rank
+    </select>
+    <select id="series" resultType="scu.cs.zhihu.domain.AuthorSeries">
+        SELECT stat_date, follower_cnt, total_voteup FROM author_stat_daily WHERE author_id = #{authorId} ORDER BY stat_date
+    </select>
+    <select id="follows" resultType="scu.cs.zhihu.domain.FollowRow">
+        SELECT f.author_id, au.name, au.headline, f.follow_at, f.unfollow_at
+          FROM user_follow f JOIN zh_author au ON au.author_id = f.author_id
+         WHERE f.user_id = #{userId} ORDER BY f.follow_at
+    </select>
+    <select id="articlesOfAuthor" resultType="scu.cs.zhihu.domain.ArticleHit">
+        SELECT a.article_id, a.title, a.url_token, au.author_id, au.name AS author_name,
+               s.voteup_count, s.comment_count, s.version_no, s.captured_at,
+               (SELECT string_agg(t.tag_name, ' · ' ORDER BY t.tag_id) FROM article_tag at2 JOIN tag t ON t.tag_id = at2.tag_id WHERE at2.article_id = a.article_id) AS tags
+          FROM zh_article a
+          JOIN zh_author au ON au.author_id = a.author_id
+          JOIN LATERAL (SELECT * FROM article_snapshot s2 WHERE s2.article_id = a.article_id ORDER BY version_no DESC LIMIT 1) s ON true
+         WHERE a.author_id = #{authorId} ORDER BY a.publish_time DESC
+    </select>
+</mapper>

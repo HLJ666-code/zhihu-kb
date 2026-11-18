@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scu.cs.zhihu.mapper.TagMapper">
+    <select id="flat" resultType="scu.cs.zhihu.domain.TagNode">
+        SELECT t.tag_id, t.tag_name, t.parent_id, count(DISTINCT at2.article_id) AS article_cnt
+          FROM tag t LEFT JOIN article_tag at2 ON at2.tag_id = t.tag_id
+         GROUP BY t.tag_id, t.tag_name, t.parent_id ORDER BY t.tag_id
+    </select>
+</mapper>
