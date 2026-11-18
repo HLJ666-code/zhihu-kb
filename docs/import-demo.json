@@ -1,0 +1,13 @@
+[
+  {
+    "urlToken": "demo-article-1",
+    "authorId": "demo-author",
+    "authorName": "示例博主",
+    "title": "这是一篇演示文章",
+    "content": "正文内容示例。",
+    "contentHtml": "<p>正文内容示例。</p>",
+    "voteupCount": 42,
+    "commentCount": 5,
+    "capturedAt": "2026-11-18T10:00:00+08:00"
+  }
+]
